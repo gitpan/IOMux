@@ -1,0 +1,379 @@
+=head1 NAME
+
+IOMux - simplify use of file-event loops
+
+=head1 INHERITANCE
+
+ IOMux is extended by
+   IOMux::Poll
+   IOMux::Select
+
+=head1 SYNOPSIS
+
+  use IOMux;
+  use IOMux::Socket::TCP;
+
+  my $mux    = IOMux->new;
+  my $server = IOMux::Socket::TCP->new(...);
+  $mux->add($server);
+
+=head1 DESCRIPTION
+
+C<IOMux> is designed to take the effort out of managing multiple socket,
+file or pipe connections within one process. It is essentially a really
+fancy front end to various kinds of event mechanisms, like C<select>
+and C<poll>. In addition to maintaining the event loop, all input and
+output of the data stream gets buffered for you which tends to be quite
+difficult in event driven programs.
+
+On many platforms, the capabilities of various event mechanisms do differ
+a lot. Be careful which mechanism you pick. Test it! Read the man-pages
+which contain information about limitations and please contribute
+information you discover.
+
+See L</DETAILS> far below for a long description about
+
+=over 4
+
+=item . event managers C<select()> and C<poll()>
+
+=item . managed file handles
+
+=item . differences with IO::Multiplex and IO::Async, plus
+
+=item . interesting implementation details.
+
+=back
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item IOMux-E<gt>B<new>(OPTIONS)
+
+There can only be one of these objects in your program. After
+instantiating this, you will L<add()|IOMux/"User interface"> file-handles and sockets.  Finally,
+L<loop()|IOMux/"User interface"> is called to go into C<select>-driven connection handling.
+
+There are currently no OPTIONS, but they will probably arrive in the
+upcoming releases.
+
+=back
+
+=head2 Accessors
+
+=head2 User interface
+
+=over 4
+
+=item $obj-E<gt>B<add>(HANDLER|BUNDLE)
+
+Add an HANDLER or BUNDLE to the multiplexer. Handlers extend
+L<IOMux::Handler|IOMux::Handler>. Bundles are related sets of handlers and
+extend L<IOMux::Bundle|IOMux::Bundle>.
+
+=item $obj-E<gt>B<endLoop>(BOOLEAN)
+
+When this flag is set to C<true>, the activities will end after having
+processed all currently flagged handles. All open handles when get
+closed cleanly.
+
+The loop will also be terminated when all the handlers are removed
+(closed) That is a saver way to close the activities of your program
+where a call to C<endLoop()> in many uses can be seen as tricky
+side-effect of a single handler.
+
+=item $obj-E<gt>B<loop>([HEARTBEAT])
+
+Enter the main loop and start processing IO events. The loop will terminate
+when all handles are closed, serious errors emerge or L<endLoop()|IOMux/"User interface"> was
+called.
+
+You may provide a HARTBEAT code reference, which will get called each
+time the internal C<select()> has found a file handle with something
+to do or a timeout has expired. As arguments, it get the multiplexer
+object, the number of events and the time left to the next timeout.
+The validity of that third argument depends on the operating system
+and the actual muxer type.
+
+example: loop
+
+  $mux->loop;
+  exit 0;
+
+example: loop with heartbeat
+
+  $mux->loop(\&hb);
+  sub hb($$)
+  {   my ($mux, $count, $t) = @_;
+  }
+
+=item $obj-E<gt>B<open>(MODE, PARAMS)
+
+This C<open()> provides a simplified interface to L<IOMux::Open|IOMux::Open>, which on
+its turn is a simplification on using all kinds of handlers. See the manual
+of L<IOMux::Open|IOMux::Open> for an extended description of the use.
+
+example: 
+
+  use IOMux::Open '-|';  # loads handler code
+  sub print_line($$)
+  {   my ($handler, $line) = @_;
+      print "line = $line";
+  }
+
+  # the short form
+  my $who = $mux->open('-|', 'who');
+  $who->readline(\&print_line);
+
+  # equivalent to the longer
+  my $who = IOMux::Open->new('-|', 'who');
+  $mux->add($who);
+  $who->readline(\&print_line);
+
+  # or even longer
+  use IOMux::Pipe::Read;
+  my $who = IOMux::Pipe::Read->new(command => 'who');
+  $mux->add($who);
+  $who->readline(\&print_line);
+
+=back
+
+=head2 For internal use
+
+The following methods are provided, but end-users should avoid calling
+these methods directly: call them via the L<IOMux::Handler|IOMux::Handler>.
+
+=over 4
+
+=item $obj-E<gt>B<changeTimeout>(FILENO, OLDTIMEOUT, NEWTIMEOUT)
+
+One of the connections wants to change its timeouts. A value of
+zero or undef means I<not active>.
+
+The correct OLDTIMEOUT must be provided to make it fast to detect whether
+this was the first timeout to expire. Checking the first timeout takes
+C<O(n)> time, so we wish to avoid that.
+
+example: 
+
+  # set timeout
+  $mux->changeTimeout($conn->fileno, undef, 10);
+
+  # better this way
+  $conn->timeout(10);
+
+=item $obj-E<gt>B<fdset>(FILENO, STATE, READ, WRITE, EXCEPT)
+
+Change the select bit STATE for the FILENO. Change the READ, WRITE
+and/or EXCEPTion state.
+
+example: 
+
+  # clear read and except, keep write
+  $mux->fdset($conn->fileno, 0, 1, 0, 1);
+
+  # better this way:
+  $conn->fdset(0, 1, 0, 1);
+
+=item $obj-E<gt>B<handler>(FILENO, [HANDLER])
+
+Returns (or sets) the handler which maintains FILENO.
+
+example: 
+
+  $mux->handler(1);   # probably STDOUT
+
+=item $obj-E<gt>B<handlers>
+
+Returns a list of all registered handlers (also the sockets).
+
+example: 
+
+  foreach my $conn ($mux->handlers) { ... }
+
+=item $obj-E<gt>B<remove>(FILENO)
+
+Remove a connection from the multiplexer. Better to use the
+connection close method.
+
+example: 
+
+  $mux->remove($conn->fileno);
+
+  # better this way:
+  $conn->close;
+
+=back
+
+=head1 DETAILS
+
+=head2 Installation
+
+Many components of IO-driven programming are quite platform dependent.
+Therefore, C<IOMux> does not enforce the installation of these
+dependencies during installation. However, when you choose to use some of
+the components, you will discover you need to install additional modules.
+For instance, when you use L<IOMux::Poll|IOMux::Poll> you will need IO::Poll.
+
+Many perl modules (like LWP) use autoloading to get additional code in
+when it gets used. This is a nice help for users who do not need to load
+those modules explicitly. It is also a speed-up for the boot-time of
+scripts. However, C<IOMux> is usually run in a daemon (see F<examples/>
+directory) which should load all code before child processes are started.
+Besides, initialization time does not really matter for daemons.
+
+=head2 Event managers
+
+The following event managers are available on the moment:
+
+=over 4
+
+=item * L<IOMux::Select|IOMux::Select>
+
+uses a C<select> call (see "man 2 select" on UNIX/Linux). The number
+of file handles it can monitor is limited (but quite large) and the
+overhead increases with the number of handles. On Windows only usable
+with sockets, no pipes nor files.
+
+=item * L<IOMux::Poll|IOMux::Poll>
+
+uses a C<poll> call (see "man 2 poll" on UNIX/Linux). Not available
+on Windows, afaik. More efficient than C<select> when the number of
+file handles grows, and many more filehandles can be monitored at
+once.
+
+=back
+
+Other possible mechanisms include C<epoll>, C<ppoll>, C<pselect>,
+C<kqueue>, and C<Glib>, may get added later. Connections to other event
+frameworks as C<POE>, C<IO::Async>, and C<AnyEvent> may get added as well.
+
+=head2 File handles
+
+The event managers looks to one or more file handles for changes: either
+the write buffer gets empty (the program may send more), requested data
+has arrived (ready to be read) or (unexpected) error text comes in.
+
+The following handles are supported, although maybe not on your
+platform.
+
+=over 4
+
+=item * L<IOMux::Service::TCP|IOMux::Service::TCP>
+
+A server for TCP based application, like a web-server. On each
+incoming connection, a L<IOMux::Net::TCP|IOMux::Net::TCP> will be started to
+handle it.
+
+=item * L<IOMux::Net::TCP|IOMux::Net::TCP>
+
+Handle a single TCP connection.
+
+=item * L<IOMux::File::Read|IOMux::File::Read> and L<IOMux::File::Write|IOMux::File::Write>
+
+Read and write a file asynchronously.
+
+=item * L<IOMux::Pipe::Read|IOMux::Pipe::Read> and L<IOMux::Pipe::Write|IOMux::Pipe::Write>
+
+Read the output from an command, respectively send bytes to
+and external command.
+
+=back
+
+=head2 Alternatives
+
+=head3 IO::Multiplex
+
+=head4 Difference to IO::Multiplex
+
+The L<IOMux|IOMux> (I<Mux>) implementation is much closer to IO::Multiplex
+(I<Plex>) than you may expect. Similar enough to write a comparison.
+
+Main differences:
+
+=over 4
+
+=item . Event managers
+
+In Plex, all is organized around a C<select> loop.  In Mux, you have
+a choice between various mechanisms of which some still need to be
+implemented.
+
+=item . Callback objects
+
+In Plex, the file-handle may have a callback object associated to it. If
+not, a default is used.  In Mux, the callback has the focus, which has
+a file-handle associated to it. This use if the multiplexing C<select>
+less visible this way, which should simplify implementations.
+
+Mux does not support callbacks to name-spaces, because the object is
+used for per-handle administration. In Plex, that administration is
+located inside the multiplex object (and therefore difficult to extend
+with higher level applications)
+
+=item . Callback routines
+
+The Mux implementation defines the same C<mux_*> methods as Plex, but
+has organized them. In Plex, the connection accepting C<mux_connection>
+and the input callback C<mux_input> are always available, even though
+the callback object will only support one of both (if your abstraction
+is correct). In Mux, there is a clear distinction between various kinds
+of handlers.
+
+In Mux, you have a few more locations where you can hook the process,
+a few more callbacks.
+
+=item . Pipes and files
+
+Mux added support for file reading and writing, pipes and proxies.
+
+=item . Timeouts
+
+One should use timeouts on all handlers, because no connection can be
+trusted even files (which may come from stalled NFS partitions).
+
+=back
+
+This module started as a rework of IO::Multiplex. It follows the
+same concept, but with major internal and visible improvements. Some
+core logic of this module has been derived from work by Bruce J Keeler
+and Rob Brown. Examples, tests and documentation are derived from their
+work as well.
+
+=head3 IO::Async / Net::Async
+
+Paul Evans has developed a large number of modules which is more
+feature complete than C<IOMux>. It supports far more event loops,
+is better tested, and has many higher level applications ready to
+be used.
+
+Certain applications will benefit from L<IOMux|IOMux> (especially my
+personal development projects), because it is based on the OODoc
+module for object oriented perl module documentation, and Log::Report
+for error handling and translations. Besides, the IO::Multiplex
+interface is much easier to use than the IO::Async concept.
+
+On CPAN, you can find various alternatives for this module.
+
+=head1 SEE ALSO
+
+This module is part of IOMux distribution version 0.12,
+built on January 27, 2011. Website: F<http://perl.overmeer.net/>
+All modules in this suite:
+L</Any::Daemon>,
+L</IOMux>, and
+L</IOMux::HTTP>.
+
+Please post questions or ideas to F<perl@overmeer.net>
+
+=head1 LICENSE
+
+Copyrights 2011 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+

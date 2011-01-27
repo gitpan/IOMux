@@ -1,0 +1,331 @@
+=head1 NAME
+
+IOMux::Net::TCP - handle a TCP connection
+
+=head1 INHERITANCE
+
+ IOMux::Net::TCP
+   is a IOMux::Handler::Read
+   is a IOMux::Handler
+
+ IOMux::Net::TCP
+   is a IOMux::Handler::Write
+   is a IOMux::Handler
+
+ IOMux::Net::TCP is extended by
+   IOMux::HTTP
+
+=head1 DESCRIPTION
+
+Handle a service or locally initiated TCP connection.
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item IOMux::Net::TCP-E<gt>B<new>(OPTIONS)
+
+Build a connection as client or server. You may either pass an prepared
+C<socket> object or parameters to initiate one. All OPTIONS which start
+with capitals are passed to the socket creation. See L<extractSocket()|IOMux::Handler/"Helpers">
+for those additional OPTIONS.
+
+ -Option    --Defined in     --Default
+  fh          IOMux::Handler   <required>
+  name        IOMux::Handler   'tcp $host:$port'
+  read_size   IOMux::Handler::Read  32768
+  socket                       <required>
+  write_size  IOMux::Handler::Write  4096
+
+=over 2
+
+=item fh => FILEHANDLE
+
+=item name => STRING
+
+=item read_size => INTEGER
+
+=item socket => IO::Socket::INET
+
+Provide a socket, either as object or the parameters to instantiate it.
+
+=item write_size => INTEGER
+
+=back
+
+example: 
+
+  # long form, most flexible
+  my $socket = IO::Socket::INET->new
+    ( PeerAddr => 'www.example.com:80'
+    , Reuse    => 1
+    );
+  my $client = IOMux::Net::TCP->new
+    ( socket   => $socket
+    );
+  $mux->add($client);
+
+  # short form
+  my $client = IOMux::Net::TCP->new
+    ( PeerAddr => 'www.example.com:80'
+    , Reuse    => 1
+    );
+  $mux->add($client);
+
+  # even shorter
+  my $client = $mux->open('tcp'
+    , PeerAddr => 'www.example.com:80'
+    , Reuse    => 1
+    );
+
+=item IOMux::Net::TCP-E<gt>B<open>(MODE, WHAT, OPTIONS)
+See L<IOMux::Handler/"Constructors">
+
+=item IOMux::Net::TCP-E<gt>B<open>(MODE, WHAT, OPTIONS)
+See L<IOMux::Handler/"Constructors">
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<readSize>([INTEGER])
+See L<IOMux::Handler::Read/"Accessors">
+
+=item $obj-E<gt>B<socket>
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<writeSize>([INTEGER])
+See L<IOMux::Handler::Write/"Accessors">
+
+=back
+
+=head2 User interface
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<shutdown>((0|1|2))
+
+Shut down a socket for reading or writing or both. See the C<shutdown>
+Perl documentation for further details.
+
+If the shutdown is for reading (0 or 2), it happens immediately. However,
+shutdowns for writing (1 or 2) are delayed until any pending output has
+been successfully written to the socket.
+
+example: 
+
+  $conn->shutdown(1);
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<readline>(CALLBACK)
+See L<IOMux::Handler::Read/"Reading">
+
+=item $obj-E<gt>B<slurp>(CALLBACK)
+See L<IOMux::Handler::Read/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<print>(STRING|SCALAR|LIST|ARRAY)
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<printf>(FORMAT, PARAMS)
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<say>(STRING|SCALAR|LIST|ARRAY)
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<write>(SCALAR, [MORE])
+See L<IOMux::Handler::Write/"Writing">
+
+=back
+
+=head2 Multiplexer
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<mux_eof>
+
+For sockets, this does not nessecarily mean that the descriptor has been
+closed, as the other end of a socket could have used L<shutdown()|IOMux::Net::TCP/"Connection"> to
+close just half of the socket, leaving us free to write data back down
+the still open half.
+
+example: 
+
+In this example, we send a final reply to the other end of the socket,
+and then shut it down for writing.  Since it is also shut down for reading
+(implicly by the EOF condition), it will be closed once the output has
+been sent, after which the mux_close callback will be called.
+
+  sub mux_eof
+  {   my ($self, $ref_input) = @_;
+      print $fh "Well, goodbye then!\n";
+      $self->shutdown(1);
+  }
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_input>(BUFFER)
+See L<IOMux::Handler::Read/"Reading">
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<mux_outbuffer_empty>
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<mux_output_waiting>
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=back
+
+=head3 Service
+
+=head2 Helpers
+
+=over 4
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::Net::TCP-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::Net::TCP-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of IOMux distribution version 0.12,
+built on January 27, 2011. Website: F<http://perl.overmeer.net/>
+All modules in this suite:
+L</Any::Daemon>,
+L</IOMux>, and
+L</IOMux::HTTP>.
+
+Please post questions or ideas to F<perl@overmeer.net>
+
+=head1 LICENSE
+
+Copyrights 2011 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+

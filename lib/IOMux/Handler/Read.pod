@@ -1,0 +1,217 @@
+=head1 NAME
+
+IOMux::Handler::Read - any mux reader
+
+=head1 INHERITANCE
+
+ IOMux::Handler::Read
+   is a IOMux::Handler
+
+ IOMux::Handler::Read is extended by
+   IOMux::Bundle
+   IOMux::File::Read
+   IOMux::Net::TCP
+   IOMux::Pipe::Read
+
+=head1 SYNOPSIS
+
+  # only use extensions
+
+=head1 DESCRIPTION
+
+This base-class defines the interface which every reader offers.
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item IOMux::Handler::Read-E<gt>B<new>(OPTIONS)
+
+ -Option   --Defined in     --Default
+  fh         IOMux::Handler   <required>
+  name       IOMux::Handler   <stringified handle>
+  read_size                   32768
+
+=over 2
+
+=item fh => FILEHANDLE
+
+=item name => STRING
+
+=item read_size => INTEGER
+
+=back
+
+=item IOMux::Handler::Read-E<gt>B<open>(MODE, WHAT, OPTIONS)
+See L<IOMux::Handler/"Constructors">
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<readSize>([INTEGER])
+
+The number of bytes requested at each read.
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=back
+
+=head2 User interface
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<readline>(CALLBACK)
+
+Read a single line (bytes upto a LF or CRLF). After the whole line
+has arrived, the CALLBACK will be invoked with the received line as
+parameter. that line is terminated by a LF (\n), even when the file
+contains CRLF or CR endings.
+
+At end of file, the last fragment will be returned.
+
+=item $obj-E<gt>B<slurp>(CALLBACK)
+
+Read all remaining data from a resource. After everything has been
+read, it will be returned as SCALAR (string reference)
+
+example: 
+
+  my $pwd  = $mux->open('<', '/etc/passwd');
+  my $data = $pwd->slurp;
+  my $size = length $$data;
+
+=back
+
+=head2 Multiplexer
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<mux_eof>(INPUT)
+
+This is called when an end-of-file condition is present on the handle.
+Like L<mux_input()|IOMux::Handler::Read/"Reading">, it is also passed a reference to the input
+buffer. You should consume the entire buffer or else it will just be lost.
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_input>(BUFFER)
+
+Called when new input has arrived on the input. It is passed a
+B<reference> to the input BUFFER. It must remove any input that
+it you have consumed from the BUFFER, and leave any partially
+received data in there.
+
+example: 
+
+  sub mux_input
+  {   my ($self, $inbuf) = @_;
+
+      # Process each whole line in the input, leaving partial
+      # lines in the input buffer for more.
+      while($$inbuf =~ s/^(.*?)\r?\n// )
+      {   $self->process_command($1);
+      }
+  }
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=back
+
+=head3 Service
+
+=head2 Helpers
+
+=over 4
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::Handler::Read-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of IOMux distribution version 0.12,
+built on January 27, 2011. Website: F<http://perl.overmeer.net/>
+All modules in this suite:
+L</Any::Daemon>,
+L</IOMux>, and
+L</IOMux::HTTP>.
+
+Please post questions or ideas to F<perl@overmeer.net>
+
+=head1 LICENSE
+
+Copyrights 2011 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+

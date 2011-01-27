@@ -1,0 +1,346 @@
+=head1 NAME
+
+IOMux::IPC - exchange data with external command
+
+=head1 INHERITANCE
+
+ IOMux::IPC
+   is a IOMux::Bundle
+   is a IOMux::Handler::Read
+   is a IOMux::Handler
+
+   IOMux::Bundle also extends IOMux::Handler::Write
+   is a IOMux::Handler::Write
+   is a IOMux::Handler
+
+=head1 SYNOPSIS
+
+  my $mux = IOMux::Select->new;  # or ::Poll
+
+  use IOMux::Open '|-|', '|=|';
+  my $pipe = $mux->open('|-|', $cmd, @cmdopts);
+
+  use IOMux::IPC;
+  my $ipc = IOMux::IPC->new(command => [$cmd, @cmdopts]);
+  $mux->add($ipc);
+
+  $pipe->getline(sub {print "$_[0]\n"});
+
+=head1 DESCRIPTION
+
+With this handler, you set-up a two way communication between the
+current process and some other process. This is not easy to program:
+you may need to play with timeouts every once in a while.
+
+This module is based on L<IOMux::Bundle|IOMux::Bundle>, because it will use
+two or three pipes to facilitate the communication.
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item IOMux::IPC-E<gt>B<new>(OPTIONS)
+
+ -Option    --Defined in     --Default
+  command                      <required>
+  errors                       <true>
+  fh          IOMux::Handler   <required>
+  mode                         |=|
+  name        IOMux::Handler   '|$cmd|'
+  read_size   IOMux::Handler::Read  32768
+  stderr      IOMux::Bundle    <undef>
+  stdin       IOMux::Bundle    <required>
+  stdout      IOMux::Bundle    <required>
+  write_size  IOMux::Handler::Write  4096
+
+=over 2
+
+=item command => COMMAND|ARRAY
+
+The external command to be executed. Either the COMMAND needs to
+parameters, or you need to pass an ARRAY of the command name and
+all its parameters.
+
+=item errors => BOOLEAN
+
+Include the stderr channel in the communication as well. These will
+be printed to STDERR by default.
+
+=item fh => FILEHANDLE
+
+=item mode => C<< |-| >> or  C<< |=| >>
+
+In the C<< |-| >> mode, only STDIN and STDOUT are processed. Specifing
+the C<< |=| >> has the same effect as setting the C<errors> option: open
+a connection for STDERR as well.
+
+=item name => STRING
+
+=item read_size => INTEGER
+
+=item stderr => L<IOMux::Handler::Read|IOMux::Handler::Read>   object
+
+=item stdin => L<IOMux::Handler::Write|IOMux::Handler::Write>  object
+
+=item stdout => L<IOMux::Handler::Read|IOMux::Handler::Read>   object
+
+=item write_size => INTEGER
+
+=back
+
+=item IOMux::IPC-E<gt>B<open>(MODE, (CMD, CMDOPTS)|(CMDARRAY, OPTIONS))
+
+Open the pipe to read. MODE is either C<< |-| >> or C<< |=| >>.  When you
+need to pass additional OPTIONS to the implied L<new()|IOMux::IPC/"Constructors">, then you must
+use an ARRAY for command name and its optional parameters.
+
+example: 
+
+  my $mux = IOMux::Poll->new;
+  $mux->open('|-|', 'sort', '-u');  # no opts
+  $mux->open('|-|', ['sort', '-u'], %opts);
+  $mux->open('|-|', 'sort');        # no opts
+  $mux->open('|-|', ['sort'], %opts);
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<childPid>
+
+The process id of the child on the other side of the pipe.
+
+=item $obj-E<gt>B<connections>
+See L<IOMux::Bundle/"Accessors">
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mode>
+
+The bits of the open mode.
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<readSize>([INTEGER])
+See L<IOMux::Handler::Read/"Accessors">
+
+=item $obj-E<gt>B<stderr>
+See L<IOMux::Bundle/"Accessors">
+
+=item $obj-E<gt>B<stdin>
+See L<IOMux::Bundle/"Accessors">
+
+=item $obj-E<gt>B<stdout>
+See L<IOMux::Bundle/"Accessors">
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<writeSize>([INTEGER])
+See L<IOMux::Handler::Write/"Accessors">
+
+=back
+
+=head2 User interface
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<readline>(CALLBACK)
+See L<IOMux::Handler::Read/"Reading">
+
+=item $obj-E<gt>B<slurp>(CALLBACK)
+See L<IOMux::Handler::Read/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<print>(STRING|SCALAR|LIST|ARRAY)
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<printf>(FORMAT, PARAMS)
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<say>(STRING|SCALAR|LIST|ARRAY)
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<write>(SCALAR, [MORE])
+See L<IOMux::Handler::Write/"Writing">
+
+=back
+
+=head2 Multiplexer
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<mux_eof>(INPUT)
+See L<IOMux::Handler::Read/"Reading">
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_input>(BUFFER)
+See L<IOMux::Handler::Read/"Reading">
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<mux_outbuffer_empty>
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<mux_output_waiting>
+See L<IOMux::Handler::Write/"Writing">
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=back
+
+=head3 Service
+
+=head3 Errors
+
+=over 4
+
+=item $obj-E<gt>B<mux_error>(BUFFER)
+See L<IOMux::Bundle/"Errors">
+
+=back
+
+=head2 Helpers
+
+=over 4
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::IPC-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::IPC-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of IOMux distribution version 0.12,
+built on January 27, 2011. Website: F<http://perl.overmeer.net/>
+All modules in this suite:
+L</Any::Daemon>,
+L</IOMux>, and
+L</IOMux::HTTP>.
+
+Please post questions or ideas to F<perl@overmeer.net>
+
+=head1 LICENSE
+
+Copyrights 2011 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+

@@ -1,0 +1,157 @@
+=head1 NAME
+
+IOMux::Handler::Service - any mux service
+
+=head1 INHERITANCE
+
+ IOMux::Handler::Service
+   is a IOMux::Handler
+
+ IOMux::Handler::Service is extended by
+   IOMux::Service::TCP
+
+=head1 SYNOPSIS
+
+  # only use extensions
+
+=head1 DESCRIPTION
+
+This base-class defines what interface services provide. A service is
+(in the general case) a socket which is listening to incoming connections)
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item IOMux::Handler::Service-E<gt>B<new>(OPTIONS)
+See L<IOMux::Handler/"Constructors">
+
+=item IOMux::Handler::Service-E<gt>B<open>(MODE, WHAT, OPTIONS)
+See L<IOMux::Handler/"Constructors">
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=back
+
+=head2 User interface
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head2 Multiplexer
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=back
+
+=head3 Service
+
+=over 4
+
+=item $obj-E<gt>B<mux_connection>(CLIENT)
+
+A new connection has arrived on the file-handle (socket) where we are
+listening on. The connection has been accepted and the filehandle
+of the new CLIENT has been added to the MUX. You may wish to send an
+initial string.
+
+=back
+
+=head2 Helpers
+
+=over 4
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::Handler::Service-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of IOMux distribution version 0.12,
+built on January 27, 2011. Website: F<http://perl.overmeer.net/>
+All modules in this suite:
+L</Any::Daemon>,
+L</IOMux>, and
+L</IOMux::HTTP>.
+
+Please post questions or ideas to F<perl@overmeer.net>
+
+=head1 LICENSE
+
+Copyrights 2011 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+

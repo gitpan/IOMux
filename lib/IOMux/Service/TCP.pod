@@ -1,0 +1,178 @@
+=head1 NAME
+
+IOMux::Service::TCP - TCP (socket) based service
+
+=head1 INHERITANCE
+
+ IOMux::Service::TCP
+   is a IOMux::Handler::Service
+   is a IOMux::Handler
+
+ IOMux::Service::TCP is extended by
+   IOMux::HTTP::Server
+
+=head1 DESCRIPTION
+
+Accept TCP connections. When a connection arrives, it will get
+handled by a new object which gets added to the multiplexer as
+well.
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item IOMux::Service::TCP-E<gt>B<new>(OPTIONS)
+
+ -Option   --Defined in     --Default
+  conn_opts                   []
+  conn_type                   <required>
+  fh         IOMux::Handler   <required>
+  name       IOMux::Handler   'listen tcp $host:$port'
+
+=over 2
+
+=item conn_opts => ARRAY
+
+Pass some extra options when objects of C<conn_type> are created.
+
+=item conn_type => CLASS|CODE
+
+The CLASS (package name) of client to be created for each new contact.
+This CLASS must extend  L<IOMux::Net::TCP|IOMux::Net::TCP>. You may also provide a
+CODE reference which will be called with the socket leading to the client.
+
+=item fh => FILEHANDLE
+
+=item name => STRING
+
+=back
+
+=item IOMux::Service::TCP-E<gt>B<open>(MODE, WHAT, OPTIONS)
+See L<IOMux::Handler/"Constructors">
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<clientType>
+
+=item $obj-E<gt>B<fh>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<fileno>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<mux>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<name>
+See L<IOMux::Handler/"Accessors">
+
+=item $obj-E<gt>B<socket>
+
+=item $obj-E<gt>B<usesSSL>
+See L<IOMux::Handler/"Accessors">
+
+=back
+
+=head2 User interface
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<close>([CALLBACK])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<timeout>([TIMEOUT])
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head2 Multiplexer
+
+=head3 Connection
+
+=over 4
+
+=item $obj-E<gt>B<mux_init>(MUX, [HANDLER])
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_remove>
+See L<IOMux::Handler/"Connection">
+
+=item $obj-E<gt>B<mux_timeout>
+See L<IOMux::Handler/"Connection">
+
+=back
+
+=head3 Reading
+
+=over 4
+
+=item $obj-E<gt>B<mux_except_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=item $obj-E<gt>B<mux_read_flagged>(FILENO)
+See L<IOMux::Handler/"Reading">
+
+=back
+
+=head3 Writing
+
+=over 4
+
+=item $obj-E<gt>B<mux_write_flagged>(FILENO)
+See L<IOMux::Handler/"Writing">
+
+=back
+
+=head3 Service
+
+=over 4
+
+=item $obj-E<gt>B<mux_connection>(CLIENT)
+See L<IOMux::Handler::Service/"Service">
+
+=back
+
+=head2 Helpers
+
+=over 4
+
+=item $obj-E<gt>B<extractSocket>(HASH)
+
+=item IOMux::Service::TCP-E<gt>B<extractSocket>(HASH)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<fdset>(STATE, READ, WRITE, ERROR)
+See L<IOMux::Handler/"Helpers">
+
+=item $obj-E<gt>B<show>
+See L<IOMux::Handler/"Helpers">
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of IOMux distribution version 0.12,
+built on January 27, 2011. Website: F<http://perl.overmeer.net/>
+All modules in this suite:
+L</Any::Daemon>,
+L</IOMux>, and
+L</IOMux::HTTP>.
+
+Please post questions or ideas to F<perl@overmeer.net>
+
+=head1 LICENSE
+
+Copyrights 2011 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+
